@@ -34,6 +34,7 @@ import ui.components.StatusUI;
 import ui.components.pickers.LabelPicker;
 import ui.issuepanel.PanelControl;
 import undo.UndoController;
+import updater.UpdateManager;
 import util.*;
 import util.events.*;
 import util.events.Event;
@@ -81,6 +82,7 @@ public class UI extends Application implements EventDispatcher {
     public GUIController guiController;
     private NotificationController notificationController;
     public UndoController undoController;
+    public UpdateManager updateManager;
 
 
     // Main UI elements
@@ -204,6 +206,9 @@ public class UI extends Application implements EventDispatcher {
 
         uiManager = new UIManager(this);
         status = new HTStatusBar(this);
+
+        updateManager = new UpdateManager();
+        updateManager.run();
     }
 
     private void initApplicationState() {

@@ -63,7 +63,9 @@ public class MenuControl extends MenuBar {
                 createRefreshMenuItem(),
                 createDocumentationMenuItem());
 
-        getMenus().addAll(file, newMenu, panels, boards, repos, view);
+        Menu update = ui.updateManager.getMenu();
+
+        getMenus().addAll(file, newMenu, panels, boards, repos, view, update);
     }
 
     private Menu createFileMenu() {
