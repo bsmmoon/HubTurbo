@@ -207,8 +207,10 @@ public class UI extends Application implements EventDispatcher {
         uiManager = new UIManager(this);
         status = new HTStatusBar(this);
 
-        updateManager = new UpdateManager();
-        updateManager.run();
+        if (!TestController.isTestMode()) {
+            updateManager = new UpdateManager();
+            updateManager.run();
+        }
     }
 
     private void initApplicationState() {

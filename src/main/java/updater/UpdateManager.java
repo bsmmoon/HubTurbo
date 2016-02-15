@@ -46,9 +46,7 @@ public class UpdateManager {
      *   e.g. only if user is logged in
      */
     public void run() {
-        if (!TestController.isTestMode()) {
-            pool.execute(() -> runUpdate());
-        }
+        pool.execute(() -> runUpdate());
     }
 
     /**
