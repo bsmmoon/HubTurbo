@@ -57,7 +57,6 @@ public class UpdateManager {
             return;
         }
 
-
         if (!downloadUpdateData()) {
             logger.error("Failed to download update data");
             return;
@@ -112,23 +111,24 @@ public class UpdateManager {
     }
 
     private boolean downloadUpdateForApplication() {
-        try {
-            DownloadProgressTracker progressTracker =
-                    updateProgressWindow.getNewDownloadProgressTracker("HubTurbo Application");
+        boolean result = false;
+        DownloadProgressTracker progressTracker =
+                updateProgressWindow.getNewDownloadProgressTracker("HubTurbo Application");
 
+        try {
             // TODO replace download source to use updater data
             DownloadFile downloadFile = new DownloadFile(
                     new URI("https://github.com/HubTurbo/HubTurbo/releases/download/V3.18.0/resource-v3.18.0.jar"),
                     new File(UPDATE_DIRECTORY + File.separator + UPDATE_APP_NAME),
                     Optional.of(progressTracker));
-            boolean result = downloadFile.startDownload();
-
-            updateProgressWindow.removeDownloadProgressTracker(progressTracker);
-
-            return result;
+            result = downloadFile.startDownload();
         } catch (URISyntaxException e) {
             logger.error("Failed to download new application", e);
-            return false;
+            result = false;
         }
+
+        updateProgressWindow.removeDownloadProgressTracker(progressTracker);
+
+        return result;
     }
 }

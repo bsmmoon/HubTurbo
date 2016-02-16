@@ -11,7 +11,6 @@ import java.util.Optional;
 
 /**
  * A class in charge of downloading file.
- * It has a progress tracker which can be used to show progress window.
  */
 public class DownloadFile {
     private static final Logger logger = LogManager.getLogger(DownloadFile.class.getName());
@@ -25,10 +24,11 @@ public class DownloadFile {
     private long totalFileSizeInBytes;
 
     /**
-     * Download file from a URL to a local destination file
+     * downloadProgressTracker is optional. Use Optional.empty() if no tracker is needed.
      *
      * @param source URI of file source, expect to be a valid URL
      * @param dest local destination file
+     * @param downloadProgressTracker optional download progress tracker
      */
     public DownloadFile(URI source, File dest, Optional<DownloadProgressTracker> downloadProgressTracker) {
         this.source = source;
@@ -36,6 +36,11 @@ public class DownloadFile {
         this.downloadProgressTracker = downloadProgressTracker;
     }
 
+    /**
+     * Start download from source to destination as specified in constructor
+     *
+     * @return true if download is successful, else false
+     */
     public boolean startDownload() {
         URLConnection sourceConnection = null;
 

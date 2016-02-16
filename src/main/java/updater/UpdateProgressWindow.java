@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * UpdateProgressWindow is the class that will display update download progresses
  */
 public class UpdateProgressWindow {
     private static final String WINDOW_TITLE = "Update Progress";
@@ -25,6 +25,9 @@ public class UpdateProgressWindow {
         this.downloads = new ArrayList<>();
     }
 
+    /**
+     * shows update download progress window
+     */
     public void showWindow() {
         if (window == null) {
             Platform.runLater(this::createProgressWindow);
@@ -33,12 +36,19 @@ public class UpdateProgressWindow {
         }
     }
 
+    /**
+     * hides update download progress window
+     */
     public void hideWindow() {
         if (window != null) {
             Platform.runLater(window::hide);
         }
     }
 
+    /**
+     * If there is no download tracker, shows that there is no update being downloaded.
+     * Else, show download progress bar(s).
+     */
     private void createProgressWindow() {
         Stage stage = new Stage();
         stage.setTitle(WINDOW_TITLE);
@@ -81,6 +91,12 @@ public class UpdateProgressWindow {
         window = stage;
     }
 
+    /**
+     * Get a download progress tracker that will be shown in the update progress window
+     *
+     * @param downloadName name of item being downloaded for labeling in window
+     * @return progress tracker that can listen
+     */
     public DownloadProgressTracker getNewDownloadProgressTracker(String downloadName) {
         DownloadProgressTracker progressTracker = new DownloadProgressTracker(downloadName);
 
@@ -91,6 +107,13 @@ public class UpdateProgressWindow {
         return progressTracker;
     }
 
+    /**
+     * Remove a download progress tracker from update progress window
+     *
+     * This should be called after download is done
+     *
+     * @param progressTracker progress tracker to be removed from window
+     */
     public void removeDownloadProgressTracker(DownloadProgressTracker progressTracker) {
         downloads.remove(progressTracker);
 
