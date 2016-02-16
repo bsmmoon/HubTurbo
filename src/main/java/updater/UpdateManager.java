@@ -1,19 +1,14 @@
 package updater;
 
 import javafx.application.Platform;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuItem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ui.TestController;
-import ui.UI;
 import util.DialogMessage;
-import util.events.UpdateManagerProgressWindowEventHandler;
 
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,19 +19,17 @@ public class UpdateManager {
     private static final Logger logger = LogManager.getLogger(UpdateManager.class.getName());
 
     private static final String UPDATE_DIRECTORY = "updates";
-
     private static final String UPDATE_SERVER_DATA_NAME =
             "https://raw.githubusercontent.com/HubTurbo/AutoUpdater/master/HubTurbo.xml";
     private static final String UPDATE_LOCAL_DATA_NAME = "HubTurbo.json";
-
     private static final String UPDATE_APP_NAME = "HubTurbo.jar";
 
-    private final FileDownloader fileDownloader;
+    private final UpdateProgressWindow updateProgressWindow;
 
     private final ExecutorService pool = Executors.newSingleThreadExecutor();
 
-    public UpdateManager() {
-        fileDownloader = new FileDownloader();
+    public UpdateManager(UpdateProgressWindow updateProgressWindow) {
+        this.updateProgressWindow = updateProgressWindow;
     }
 
     /**
@@ -64,11 +57,22 @@ public class UpdateManager {
             return;
         }
 
-        downloadUpdateData();
+
+        if (!downloadUpdateData()) {
+            logger.error("Failed to download update data");
+            return;
+        }
 
         // TODO check if there is a new update since last update, and download update if necessary
 
-        downloadUpdateForApplication();
+        if (!downloadUpdateForApplication()) {
+            logger.error("Failed to download updated application");
+            return;
+        }
+
+        updateProgressWindow.hideWindow();
+        Platform.runLater(() ->
+                DialogMessage.showInformationDialog("Download completed", "Downloaded new HubTurbo."));
 
         // TODO once update is done, run new process that will:
         // - kill current HubTurbo
@@ -82,70 +86,49 @@ public class UpdateManager {
      * - Create directory(ies) for updates
      */
     private boolean initUpdate() {
-        boolean result = false;
-
         File updateDir = new File(UPDATE_DIRECTORY);
 
-        if (!updateDir.exists()) {
-            result = updateDir.mkdirs();
-            if (!result) {
-                logger.error("Failed to create update directories");
-            }
+        if (!updateDir.exists() && !updateDir.mkdirs()) {
+            logger.error("Failed to create update directories");
+            return false;
         }
 
-        return result;
+        // TODO check if internet connection is present
+
+        return true;
     }
 
-    private void downloadUpdateData() {
+    private boolean downloadUpdateData() {
         try {
-            fileDownloader.setProgressTrackerWindowDescription("Checking for update", "Checking for update...");
-            fileDownloader.setEnableProgressWindow(false);
-            fileDownloader.downloadFileFromUrlToFile(
+            DownloadFile downloadFile = new DownloadFile(
                     new URI(UPDATE_SERVER_DATA_NAME),
-                    new File(UPDATE_DIRECTORY + File.separator + UPDATE_LOCAL_DATA_NAME));
+                    new File(UPDATE_DIRECTORY + File.separator + UPDATE_LOCAL_DATA_NAME),
+                    Optional.empty());
+            return downloadFile.startDownload();
         } catch (URISyntaxException e) {
             logger.error("Failed to download update data", e);
+            return false;
         }
     }
 
-    private void downloadUpdateForApplication() {
+    private boolean downloadUpdateForApplication() {
         try {
-            fileDownloader.setProgressTrackerWindowDescription("Downloading update",
-                    "Downloading update for HubTurbo...");
-            fileDownloader.setEnableProgressWindow(true);
-            fileDownloader.showDownloadProgress();
+            DownloadProgressTracker progressTracker =
+                    updateProgressWindow.getNewDownloadProgressTracker("HubTurbo Application");
+
             // TODO replace download source to use updater data
-            fileDownloader.downloadFileFromUrlToFile(
+            DownloadFile downloadFile = new DownloadFile(
                     new URI("https://github.com/HubTurbo/HubTurbo/releases/download/V3.18.0/resource-v3.18.0.jar"),
-                    new File(UPDATE_DIRECTORY + File.separator + UPDATE_APP_NAME));
-            fileDownloader.hideDownloadProgress();
-            DialogMessage.showInformationDialog("Download completed", "Downloaded new HubTurbo.");
+                    new File(UPDATE_DIRECTORY + File.separator + UPDATE_APP_NAME),
+                    Optional.of(progressTracker));
+            boolean result = downloadFile.startDownload();
+
+            updateProgressWindow.removeDownloadProgressTracker(progressTracker);
+
+            return result;
         } catch (URISyntaxException e) {
             logger.error("Failed to download new application", e);
+            return false;
         }
-    }
-
-    /**
-     * Create menu for UpdateManager
-     *
-     * @return Menu for MenuControl to display
-     */
-    public Menu getMenu() {
-        Menu update = new Menu("Update");
-
-        MenuItem checkProgress = new MenuItem("Check progress...");
-        checkProgress.setDisable(true);
-
-        checkProgress.setOnAction(e -> {
-            Platform.runLater(() -> fileDownloader.showDownloadProgress());
-        });
-
-        UI.events.registerEvent((UpdateManagerProgressWindowEventHandler) e -> {
-            checkProgress.setDisable(!e.isProgressWindowEnabled);
-        });
-
-        update.getItems().addAll(checkProgress);
-
-        return update;
     }
 }

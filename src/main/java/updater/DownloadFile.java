@@ -1,56 +1,28 @@
 package updater;
 
-import javafx.application.Platform;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ui.UI;
-import util.DialogMessage;
-import util.events.Event;
-import util.events.UpdateManagerProgressWindowEvent;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * A class in charge of downloading file.
  * It has a progress tracker which can be used to show progress window.
  */
-public class FileDownloader {
-    private static final Logger logger = LogManager.getLogger(FileDownloader.class.getName());
+public class DownloadFile {
+    private static final Logger logger = LogManager.getLogger(DownloadFile.class.getName());
 
     public static final int CONNECTION_TIMEOUT = 15000;
     public static final int READ_CONNECTION_TIMEOUT = 30000;
 
+    private final URI source;
+    private final File dest;
+    private final Optional<DownloadProgressTracker> downloadProgressTracker;
     private long totalFileSizeInBytes;
-
-    private final ProgressTracker progressTracker;
-
-    public FileDownloader() {
-        progressTracker = new ProgressTracker();
-    }
-
-    /**
-     * Set if current download can have its progress shown
-     *
-     * @param enableProgressWindow
-     */
-    public void setEnableProgressWindow(boolean enableProgressWindow) {
-        UI.events.triggerEvent(new UpdateManagerProgressWindowEvent(enableProgressWindow));
-    }
-
-    /**
-     * Set current download's progress window title and message
-     *
-     * @param windowTitle
-     * @param windowMessage
-     */
-    public void setProgressTrackerWindowDescription(String windowTitle, String windowMessage) {
-        this.progressTracker.setProgressWindowDetails(windowTitle, windowMessage);
-    }
 
     /**
      * Download file from a URL to a local destination file
@@ -58,16 +30,20 @@ public class FileDownloader {
      * @param source URI of file source, expect to be a valid URL
      * @param dest local destination file
      */
-    public void downloadFileFromUrlToFile(URI source, File dest) {
-        progressTracker.setProgressValue(-1);
+    public DownloadFile(URI source, File dest, Optional<DownloadProgressTracker> downloadProgressTracker) {
+        this.source = source;
+        this.dest = dest;
+        this.downloadProgressTracker = downloadProgressTracker;
+    }
 
+    public boolean startDownload() {
         URLConnection sourceConnection = null;
 
         try {
             sourceConnection = setupDownloadConnection(source);
         } catch (IOException e) {
             logger.error("URI of source file is not a well-formed URL");
-            return;
+            return false;
         }
 
         assert sourceConnection != null;
@@ -79,15 +55,17 @@ public class FileDownloader {
                 OutputStream outputStream = setupStreamToDest(dest);
         ) {
             if (inputStream == null || outputStream == null) {
-                logger.info("Failed to create streams for download");
-                return;
+                logger.error("Failed to create streams for download");
+                return false;
             }
 
             download(inputStream, outputStream);
         } catch (IOException e) {
             logger.error("Failed to create streams for download", e);
+            return false;
         }
 
+        return true;
     }
 
     private URLConnection setupDownloadConnection(URI source) throws IOException {
@@ -113,6 +91,11 @@ public class FileDownloader {
     private OutputStream setupStreamToDest(File dest) {
         OutputStream outputStream = null;
 
+        if (dest.exists() && !dest.delete()) {
+            logger.error("Failed to delete old file");
+            return null;
+        }
+
         try {
             if (dest.createNewFile()) {
                 outputStream = new FileOutputStream(dest);
@@ -126,23 +109,12 @@ public class FileDownloader {
 
     private void download(InputStream inputStream, OutputStream outputStream) throws IOException {
         DownloadCountingOutputStream countingOutputStream =
-                new DownloadCountingOutputStream(outputStream, progressTracker, totalFileSizeInBytes);
+                new DownloadCountingOutputStream(outputStream, totalFileSizeInBytes);
+
+        if (downloadProgressTracker.isPresent()) {
+            countingOutputStream.addListener(downloadProgressTracker.get());
+        }
 
         IOUtils.copy(inputStream, countingOutputStream);
-    }
-
-    /**
-     * Show progress window of download.
-     * Expect setProgressTrackerWindowDescription to have been called before download.
-     */
-    public void showDownloadProgress() {
-        this.progressTracker.showProgressWindow();
-    }
-
-    /**
-     * Hide progress window of download.
-     */
-    public void hideDownloadProgress() {
-        this.progressTracker.hideProgressWindow();
     }
 }

@@ -63,7 +63,7 @@ public class MenuControl extends MenuBar {
                 createRefreshMenuItem(),
                 createDocumentationMenuItem());
 
-        Menu update = ui.updateManager.getMenu();
+        Menu update = createUpdateMenu();
 
         getMenus().addAll(file, newMenu, panels, boards, repos, view, update);
     }
@@ -196,7 +196,7 @@ public class MenuControl extends MenuBar {
             delete.getItems().clear();
 
             Map<String, List<PanelInfo>> boards = prefs.getAllBoards();
-            
+
             for (Map.Entry<String, List<PanelInfo>> entry : boards.entrySet()) {
                 final String boardName = entry.getKey();
                 final List<PanelInfo> panelSet = entry.getValue();
@@ -312,5 +312,23 @@ public class MenuControl extends MenuBar {
 
     private void onRepoRemove(String repoId) {
         ui.logic.removeStoredRepository(repoId).thenRun(() -> ui.triggerEvent(new UnusedStoredReposChangedEvent()));
+    }
+
+    private Menu createUpdateMenu() {
+        Menu update = new Menu("Update");
+
+        MenuItem checkProgress = new MenuItem("Check progress...");
+
+        if (ui.updateManager == null) {
+            checkProgress.setDisable(true);
+        } else {
+            checkProgress.setOnAction(e -> {
+                Platform.runLater(() -> ui.updateProgressWindow.showWindow());
+            });
+        }
+
+        update.getItems().addAll(checkProgress);
+
+        return update;
     }
 }

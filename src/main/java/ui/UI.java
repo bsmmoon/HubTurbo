@@ -35,6 +35,7 @@ import ui.components.pickers.LabelPicker;
 import ui.issuepanel.PanelControl;
 import undo.UndoController;
 import updater.UpdateManager;
+import updater.UpdateProgressWindow;
 import util.*;
 import util.events.*;
 import util.events.Event;
@@ -83,6 +84,7 @@ public class UI extends Application implements EventDispatcher {
     private NotificationController notificationController;
     public UndoController undoController;
     public UpdateManager updateManager;
+    public UpdateProgressWindow updateProgressWindow;
 
 
     // Main UI elements
@@ -208,7 +210,8 @@ public class UI extends Application implements EventDispatcher {
         status = new HTStatusBar(this);
 
         if (!TestController.isTestMode()) {
-            updateManager = new UpdateManager();
+            updateProgressWindow = new UpdateProgressWindow();
+            updateManager = new UpdateManager(updateProgressWindow);
             updateManager.run();
         }
     }
