@@ -1,4 +1,4 @@
-package updater;
+package ui;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import updater.DownloadProgressTracker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
 public class UpdateProgressWindow {
     private static final String WINDOW_TITLE = "Update Progress";
     private Stage window;
+    private VBox windowMainLayout;
     private final List<DownloadProgressTracker> downloads;
 
     public UpdateProgressWindow() {
@@ -34,6 +36,8 @@ public class UpdateProgressWindow {
         } else {
             Platform.runLater(window::show);
         }
+
+        Platform.runLater(window::toFront);
     }
 
     /**
@@ -53,38 +57,15 @@ public class UpdateProgressWindow {
         Stage stage = new Stage();
         stage.setTitle(WINDOW_TITLE);
 
-        VBox downloadsContainer = new VBox();
+        windowMainLayout = new VBox();
 
-        if (downloads.isEmpty()) {
-            Label noDownloadLabel = new Label();
-            noDownloadLabel.setText("There is no update being downloaded.");
-            noDownloadLabel.setPadding(new Insets(50));
-
-            downloadsContainer.getChildren().add(noDownloadLabel);
-        } else {
-            for (DownloadProgressTracker progressTracker : downloads) {
-                Label downloadLabel = new Label();
-                downloadLabel.setText("Downloading " + progressTracker.getDownloadName() + "...");
-
-                ProgressBar progressBar = new ProgressBar(-1.0);
-                progressBar.setPrefWidth(400);
-                progressTracker.addProgressBarToListen(progressBar);
-
-                VBox downloadProgressItem = new VBox();
-                downloadProgressItem.setSpacing(20);
-                downloadProgressItem.setPadding(new Insets(20));
-                downloadProgressItem.setAlignment(Pos.CENTER_LEFT);
-                downloadProgressItem.getChildren().addAll(downloadLabel, progressBar);
-
-                downloadsContainer.getChildren().add(downloadProgressItem);
-            }
-        }
+        reloadWindowLayout();
 
         Group root = new Group();
         Scene scene = new Scene(root);
         stage.setScene(scene);
 
-        scene.setRoot(downloadsContainer);
+        scene.setRoot(windowMainLayout);
 
         stage.show();
 
@@ -102,7 +83,9 @@ public class UpdateProgressWindow {
 
         downloads.add(progressTracker);
 
-        window = null; // to reset the layout
+        if (window != null && windowMainLayout != null) {
+            reloadWindowLayout();
+        }
 
         return progressTracker;
     }
@@ -117,6 +100,37 @@ public class UpdateProgressWindow {
     public void removeDownloadProgressTracker(DownloadProgressTracker progressTracker) {
         downloads.remove(progressTracker);
 
-        window = null; // to reset the layout
+        if (window != null && windowMainLayout != null) {
+            reloadWindowLayout();
+        }
+    }
+
+    private void reloadWindowLayout() {
+        windowMainLayout.getChildren().removeAll();
+
+        if (downloads.isEmpty()) {
+            Label noDownloadLabel = new Label();
+            noDownloadLabel.setText("There is no update being downloaded.");
+            noDownloadLabel.setPadding(new Insets(50));
+
+            windowMainLayout.getChildren().add(noDownloadLabel);
+        } else {
+            for (DownloadProgressTracker progressTracker : downloads) {
+                Label downloadLabel = new Label();
+                downloadLabel.setText("Downloading " + progressTracker.getDownloadName() + "...");
+
+                ProgressBar progressBar = new ProgressBar(-1.0);
+                progressBar.setPrefWidth(400);
+                progressTracker.addProgressBarToListen(progressBar);
+
+                VBox downloadProgressItem = new VBox();
+                downloadProgressItem.setSpacing(20);
+                downloadProgressItem.setPadding(new Insets(20));
+                downloadProgressItem.setAlignment(Pos.CENTER_LEFT);
+                downloadProgressItem.getChildren().addAll(downloadLabel, progressBar);
+
+                windowMainLayout.getChildren().add(downloadProgressItem);
+            }
+        }
     }
 }

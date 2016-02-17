@@ -3,6 +3,7 @@ package updater;
 import javafx.application.Platform;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ui.UpdateProgressWindow;
 import util.DialogMessage;
 
 import java.io.File;
