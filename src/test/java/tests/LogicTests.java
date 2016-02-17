@@ -121,8 +121,8 @@ public class LogicTests {
         List<String> newLabels = Arrays.asList("label3", "label4");
 
         TurboIssue issue = createIssueWithLabels(1, originalLabels);
-        Thread.sleep(10);
-        TurboIssue modifiedIssue = createIssueWithLabels(1, originalLabels);
+        TurboIssue modifiedIssue = TestUtils.delayThenGet(
+                10, () -> createIssueWithLabels(1, originalLabels));
 
         Model mockedModel = mock(Model.class);
         when(mockedModel.replaceIssueLabels(issue.getId(), newLabels)).thenReturn(Optional.of(issue));

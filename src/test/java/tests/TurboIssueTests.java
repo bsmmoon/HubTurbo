@@ -131,18 +131,15 @@ public class TurboIssueTests {
         TurboIssue issue = new TurboIssue("testrepo", 1, "Issue title");
 
         LocalDateTime checkPoint = issue.getLabelsLastModifiedAt();
-        Thread.sleep(10);
-        issue.setLabels(new ArrayList<>());
+        TestUtils.delayThenRun(10, () -> issue.setLabels(new ArrayList<>()));
         assertTrue(issue.getLabelsLastModifiedAt().isAfter(checkPoint));
 
         checkPoint = issue.getLabelsLastModifiedAt();
-        Thread.sleep(10);
-        issue.addLabel("label");
+        TestUtils.delayThenRun(10, () -> issue.addLabel("label"));
         assertTrue(issue.getLabelsLastModifiedAt().isAfter(checkPoint));
 
         checkPoint = issue.getLabelsLastModifiedAt();
-        Thread.sleep(10);
-        issue.addLabel(new TurboLabel("testrepo", "label"));
+        TestUtils.delayThenRun(10, () -> issue.addLabel(new TurboLabel("testrepo", "label")));
         assertTrue(issue.getLabelsLastModifiedAt().isAfter(checkPoint));
     }
 
@@ -153,9 +150,9 @@ public class TurboIssueTests {
     @Test
     public void testReconcileUpdatedLabelsOverride() throws InterruptedException {
         TurboIssue originalIssue = LogicTests.createIssueWithLabels(1, new ArrayList<>());
-        Thread.sleep(10);
         List<String> newLabels = Arrays.asList("label1", "label2");
-        TurboIssue updatedIssue = LogicTests.createIssueWithLabels(1, newLabels);
+        TurboIssue updatedIssue = TestUtils.delayThenGet(
+                10, () -> LogicTests.createIssueWithLabels(1, newLabels));
 
         List<TurboIssue> updatedList = TurboIssue.reconcile(Arrays.asList(originalIssue),
                                                             Arrays.asList(updatedIssue));
@@ -169,9 +166,9 @@ public class TurboIssueTests {
     @Test
     public void testReconcileUpdatedLabelsRetained() throws InterruptedException {
         TurboIssue updatedIssue = LogicTests.createIssueWithLabels(1, new ArrayList<>());
-        Thread.sleep(10);
         List<String> originalLabels = Arrays.asList("label1", "label2");
-        TurboIssue originalIssue = LogicTests.createIssueWithLabels(1, originalLabels);
+        TurboIssue originalIssue = TestUtils.delayThenGet(
+                10, () -> LogicTests.createIssueWithLabels(1, originalLabels));
 
         List<TurboIssue> updatedList = TurboIssue.reconcile(Arrays.asList(originalIssue),
                                                             Arrays.asList(updatedIssue));
